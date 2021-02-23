@@ -1,4 +1,6 @@
-﻿using Core.Entities;
+﻿using API.Dtos;
+using AutoMapper;
+using Core.Entities;
 using Core.Interfaces;
 using Core.Specifications;
 using Infrastructure.Data;
@@ -18,31 +20,37 @@ namespace API.Controllers
         private readonly IGenericRepository<Product> _productsRepo;
         private readonly IGenericRepository<ProductBrand> _productBrandRepo;
         private readonly IGenericRepository<ProductType> _productTypeRepo;
+        private readonly IMapper _autoMapper;
 
         public ProductsController(IGenericRepository<Product> productsRepo,
-            IGenericRepository<ProductBrand> productBrandRepo, IGenericRepository<ProductType> productTypeRepo)
+            IGenericRepository<ProductBrand> productBrandRepo, IGenericRepository<ProductType> productTypeRepo,
+            IMapper autoMapper)
         {
             _productsRepo = productsRepo;
             _productBrandRepo = productBrandRepo;
             _productTypeRepo = productTypeRepo;
+            _autoMapper = autoMapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Product>>> GetProducts()
+        public async Task<ActionResult<IReadOnlyList<ProductToReturnDto>>> GetProducts()
         {
             var spec = new ProductsWithTypesAndBrandsSpecification();
 
             var products = await _productsRepo.ListAsync(spec);
 
-            return Ok(products);
+            return Ok(_autoMapper.Map<IReadOnlyList<Product>, IReadOnlyList<ProductToReturnDto>>(products));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        public async Task<ActionResult<ProductToReturnDto>> GetProduct(int id)
         {
             var spec = new ProductsWithTypesAndBrandsSpecification(id);
 
-            return await _productsRepo.GetEntityWithSpec(spec);
+            var product = await _productsRepo.GetEntityWithSpec(spec);
+
+            return _autoMapper.Map<Product, ProductToReturnDto>(product);
+           
         }
 
         [HttpGet("brands")]
